@@ -1,0 +1,40 @@
+memcached 分析命令
+
+
+#查看 所有key
+stats items
+
+#通过item id查看key 参数1 为itemid  参数2 为列出长度 0为全部列出
+stats cachedump 7 0 
+
+#get key 查看
+get 【key】
+
+
+#查看memcached使用情况
+stats
+
+ limit_maxbytes、bytes
+    memcached在存储的时候是可以设置失效时间的，但如果存储已经满了，那旧数据即使没有到过期时间，也会被移除。所以需要观察memcached存储是否已经满了，同时这对扩容也是有意义的参考。limit_maxbytes即总的存储大小，而bytes就是已经使用的大小，从这两个数据就可以看出在memcached启动时，我们为它分配的内存是否足够使用。
+cmd_get、cmd_set
+	memcached启动后，我们对它一共做了多少次读取操作呢？从这两个参数可以观察出来。
+
+get_hits、get_misses
+	使用memcached后，我们需要评估我们使用的策略是否合理。不能够使用中间缓存后，后端的数据库还是有较大的访问量，这样的话中间缓存就变得没有意义了。get_hits表示命中了多少次读取，即来memcached取到了多少有效数据；get_misses表示没有命中的次数，即此次来取数据的时候，memcached并没有你所查询的数据。如果没有清零统计数据的话，cmd_get = get_hits + get_misses。
+
+#重置 统计数据
+stats reset
+
+#清空 设置过期，并不会删除key
+
+flush_all
+
+memcached -d -m 10 -u root -l 192.168.5.80 -p 11222 -c 256 -P /tmp/memcached.pid  
+参数说明:
+-d选项是启动一个守护进程
+-m是分配给Memcache使用的内存数量，单位是MB，我这里是10MB
+-u是运行Memcache的用户，我这里是root
+-l是监听的服务器IP地址
+-p是设置Memcache监听的端口,最好是1024以上的端口
+-c选项是最大运行的并发连接数，默认是1024，按照你服务器的负载量来设定
+-P是设置保存Memcache的pid文件 
